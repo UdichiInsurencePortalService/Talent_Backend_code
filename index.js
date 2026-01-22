@@ -32,22 +32,28 @@ const examsubmit  = require('./Route/examSubmitRoutes')
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://talent-frontend-design.vercel.app/",
-  "https://talent-admin-beta.vercel.app/",
+  "https://talent-frontend-design.vercel.app",
+  "https://talent-admin-beta.vercel.app"
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
+      // allow requests with no origin (Postman, mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        return callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
+
 
 app.use(express.json());
 app.use(cookieParser());
