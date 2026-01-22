@@ -32,6 +32,7 @@ const examsubmit  = require('./Route/examSubmitRoutes')
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "https://talent-frontend-design.vercel.app/",
 ];
 
 app.use(
