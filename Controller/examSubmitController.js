@@ -1,6 +1,7 @@
 const pool = require("../Model/postgressdb");
 const generateResultPDF = require("../utils/generateResultPDF");
 const sendResultMail = require("../utils/sendResultMail");
+
 exports.submitExam = async (req, res) => {
   try {
     const {
@@ -41,13 +42,10 @@ exports.submitExam = async (req, res) => {
     let attempted = 0;
 
     qRes.rows.forEach((q) => {
-      const selected = answers[String(q.id)]; // 🔥 IMPORTANT
-
+      const selected = answers[String(q.id)];
       if (selected) {
         attempted++;
-        if (selected === q.correct_option) {
-          correct++;
-        }
+        if (selected === q.correct_option) correct++;
       }
     });
 
@@ -62,7 +60,7 @@ exports.submitExam = async (req, res) => {
       exam_code,
       language_code,
       total_questions: total,
-      attempted_questions: attempted,      // ✅ FIX
+      attempted_questions: attempted,
       correct_answers: correct,
       percentage,
       result_status,
@@ -71,12 +69,24 @@ exports.submitExam = async (req, res) => {
       exam_time: meta.exam_time,
     };
 
-    const pdfPath = await generateResultPDF(resultData);
-    await sendResultMail(pdfPath);
+    // ✅ SEND RESPONSE FIRST (CRITICAL)
+    res.json({
+      success: true,
+      percentage,
+      result: result_status,
+    });
 
-    res.json({ success: true, percentage, result: result_status });
+    // ================= OPTIONAL EMAIL (SAFE) =================
+    try {
+      const pdfPath = await generateResultPDF(resultData);
+      await sendResultMail(pdfPath);
+    } catch (mailErr) {
+      console.error("EMAIL FAILED (ignored):", mailErr.message);
+    }
+    // =========================================================
+
   } catch (err) {
-    console.error(err);
+    console.error("SUBMIT ERROR:", err);
     res.status(500).json({ error: "Submission failed" });
   }
 };
