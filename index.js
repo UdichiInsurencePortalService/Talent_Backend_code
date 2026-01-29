@@ -5,8 +5,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const http = require("http"); // ✅ IMPORTANT
-const { Server } = require("socket.io"); // ✅ IMPORTANT
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,75 +15,60 @@ const PORT = process.env.PORT || 3000;
 // Initialize PostgreSQL
 require("./Model/postgressdb");
 
-// Routes
-const organizationroutes = require("./Route/organizationroutes");
-const testtakerroute = require("./Route/testtaker");
-const demoRoutes = require("./Route/demo");
-const submitdemo = require("./Route/demosubmit");
-const authRoutes = require("./Route/authRoutes");
-const examRoute = require("./Route/examRoutes");
-const scheduledRoute = require("./Route/scheduledExamRoutes");
-const candidates = require("./Route/candidateRoutes")
-const sendexamlink = require("./Route/examLinkRoutes")
-const examvalidate = require("./Route/examLinkvalidationcheck")
-const examsubmit  = require('./Route/examSubmitRoutes')
-
-// -------------------- MIDDLEWARES -------------------- //
-
+// -------------------- CORS CONFIG -------------------- //
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://talent-frontend-design.vercel.app",
-  "https://talent-admin-beta.vercel.app"
+  "https://talent-admin-beta.vercel.app",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (Postman, mobile apps)
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
-      }
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-
-app.use(express.json());
+// -------------------- BODY PARSERS -------------------- //
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
 
-// -------------------- ROUTES -------------------- //
+// -------------------- 🔥 STATIC UPLOADS (IMPORTANT) -------------------- //
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
 
-app.use("/api/auth", authRoutes);
-app.use("/api/organizations", organizationroutes);
-app.use("/api/testtakerdemo", testtakerroute);
-app.use("/api/demotest", demoRoutes);
-app.use("/api/demo-submit", submitdemo);
-app.use("/api", examRoute);
-app.use("/api", scheduledRoute);
-app.use("/api/",candidates)
-app.use("/api",sendexamlink)
-app.use("/api",examvalidate)
-app.use("/api",examsubmit)
+// -------------------- ROUTES -------------------- //
+app.use("/api/auth", require("./Route/authRoutes"));
+app.use("/api/organizations", require("./Route/organizationroutes"));
+app.use("/api/testtakerdemo", require("./Route/testtaker"));
+app.use("/api/demotest", require("./Route/demo"));
+app.use("/api/demo-submit", require("./Route/demosubmit"));
+app.use("/api", require("./Route/examRoutes"));
+app.use("/api", require("./Route/scheduledExamRoutes"));
+app.use("/api", require("./Route/candidateRoutes"));
+app.use("/api", require("./Route/examLinkRoutes"));
+app.use("/api", require("./Route/examLinkvalidationcheck"));
+app.use("/api", require("./Route/examSubmitRoutes"));
+app.use("/api", require("./Route/attendanceRoutes"));
 
 
 app.get("/", (req, res) => {
   res.send("🚀 Server Running Successfully");
 });
 
-// -------------------- SOCKET.IO SETUP -------------------- //
-
-// ✅ Create HTTP server
+// -------------------- SOCKET.IO -------------------- //
 const server = http.createServer(app);
 
-// ✅ Attach Socket.IO
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -90,33 +76,21 @@ const io = new Server(server, {
   },
 });
 
-// ✅ Socket events
 io.on("connection", (socket) => {
   console.log("🟢 Socket connected:", socket.id);
 
-  // ADMIN JOIN
   socket.on("join_admin", ({ examCode }) => {
-    if (!examCode) {
-      console.log("❌ Admin joined without examCode");
-      return;
-    }
-
+    if (!examCode) return;
     socket.join(`admin_${examCode}`);
-    console.log("🛡 Admin joined exam:", examCode);
   });
 
-  // STUDENT JOIN
   socket.on("join_exam", ({ examCode, userId }) => {
     if (!examCode || !userId) return;
-
     socket.join(`exam_${examCode}`);
-    console.log(`👨‍🎓 Student ${userId} joined ${examCode}`);
   });
 
   socket.on("exam_event", (data) => {
     if (!data.examCode) return;
-
-    // send to admin room
     io.to(`admin_${data.examCode}`).emit("admin_event", data);
   });
 
@@ -125,9 +99,7 @@ io.on("connection", (socket) => {
   });
 });
 
-
 // -------------------- START SERVER -------------------- //
-
 server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

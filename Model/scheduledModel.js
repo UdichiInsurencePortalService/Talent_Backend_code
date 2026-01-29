@@ -14,13 +14,32 @@ exports.createScheduledExam = async (data) => {
     exam_time,
     duration_minutes,
     assessor_name,
+    institution_name,
+    center_city,
+    center_area,
+    center_lat,
+    center_lng,
+    allowed_radius
   } = data;
 
   const result = await pool.query(
-    `INSERT INTO scheduled_exams
-     (exam_code, exam_name, subject_name, exam_date, exam_time, duration_minutes, assessor_name)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     RETURNING *`,
+    `INSERT INTO scheduled_exams (
+      exam_code,
+      exam_name,
+      subject_name,
+      exam_date,
+      exam_time,
+      duration_minutes,
+      assessor_name,
+      institution_name,
+      center_city,
+      center_area,
+      center_lat,
+      center_lng,
+      allowed_radius
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+    RETURNING *`,
     [
       exam_code,
       exam_name,
@@ -29,11 +48,18 @@ exports.createScheduledExam = async (data) => {
       exam_time,
       duration_minutes,
       assessor_name,
+      institution_name,
+      center_city,
+      center_area,
+      center_lat,
+      center_lng,
+      allowed_radius || 100
     ]
   );
 
   return result.rows[0];
 };
+
 
 /*
 |--------------------------------------------------------------------------

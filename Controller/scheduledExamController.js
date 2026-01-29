@@ -7,38 +7,55 @@ const scheduledExamModel = require("../Model/scheduledModel");
 */
 exports.createScheduledExam = async (req, res) => {
   try {
-    const {
-      exam_code,
-      exam_name,
-      subject_name,
-      exam_date,
-      exam_time,
-      duration_minutes,
-      assessor_name,
-    } = req.body;
+  const {
+  exam_code,
+  exam_name,
+  subject_name,
+  exam_date,
+  exam_time,
+  duration_minutes,
+  assessor_name,
+  institution_name,
+  center_city,
+  center_area,
+  center_lat,
+  center_lng,
+  allowed_radius
+} = req.body;
 
-    if (
-      !exam_code ||
-      !exam_name ||
-      !subject_name ||
-      !exam_date ||
-      !exam_time ||
-      !duration_minutes
-    ) {
-      return res.status(400).json({
-        error: "All required fields must be filled",
-      });
-    }
+if (
+  !exam_code ||
+  !exam_name ||
+  !subject_name ||
+  !exam_date ||
+  !exam_time ||
+  !duration_minutes ||
+  !institution_name ||
+  !center_city ||
+  !center_lat ||
+  !center_lng
+) {
+  return res.status(400).json({
+    error: "All required fields must be filled",
+  });
+}
 
-    const scheduledExam = await scheduledExamModel.createScheduledExam({
-      exam_code,
-      exam_name,
-      subject_name,
-      exam_date,
-      exam_time,
-      duration_minutes,
-      assessor_name,
-    });
+const scheduledExam = await scheduledExamModel.createScheduledExam({
+  exam_code,
+  exam_name,
+  subject_name,
+  exam_date,
+  exam_time,
+  duration_minutes,
+  assessor_name,
+  institution_name,
+  center_city,
+  center_area,
+  center_lat,
+  center_lng,
+  allowed_radius
+});
+
 
     res.status(201).json({
       success: true,

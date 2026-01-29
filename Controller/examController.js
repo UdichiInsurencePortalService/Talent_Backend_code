@@ -260,17 +260,38 @@ exports.getAllExams = async (req, res) => {
     });
   }
 };
+
+// 
+
+
 exports.getQuestionsByLanguage = async (req, res) => {
-  const { examCode } = req.params;
-  const lang = req.query.lang || "en";
+  try {
+    const { examCode } = req.params;
+    const lang = req.query.lang || "en";
 
-  const result = await pool.query(
-    `SELECT question_text, option_a, option_b, option_c, option_d
-     FROM questions
-     WHERE exam_code=$1 AND language_code=$2
-     ORDER BY id ASC`,
-    [examCode, lang]
-  );
+    const result = await pool.query(
+      `SELECT 
+         id,
+         question_text,
+         option_a,
+         option_b,
+         option_c,
+         option_d
+       FROM questions
+       WHERE exam_code = $1
+         AND language_code = $2
+       ORDER BY id ASC`,
+      [examCode, lang]
+    );
 
-  res.json({ success: true, data: result.rows });
+    res.status(200).json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (err) {
+    console.error("GET QUESTIONS ERROR:", err);
+    res.status(500).json({
+      error: "Failed to fetch questions",
+    });
+  }
 };

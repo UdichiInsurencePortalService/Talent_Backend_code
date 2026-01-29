@@ -1,11 +1,7 @@
 
 
-
-
-
 const { Pool } = require("pg");
 
-// Load .env only in local development
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
