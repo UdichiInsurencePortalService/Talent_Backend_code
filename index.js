@@ -19,6 +19,7 @@ require("./Model/postgressdb");
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+    "http://localhost:5175",
   "https://talent-frontend-design.vercel.app",
   "https://talent-admin-beta.vercel.app",
 ];
@@ -31,8 +32,6 @@ app.use(
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -41,11 +40,8 @@ app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
 
-// -------------------- 🔥 STATIC UPLOADS (IMPORTANT) -------------------- //
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
-);
+// -------------------- STATIC -------------------- //
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // -------------------- ROUTES -------------------- //
 app.use("/api/auth", require("./Route/authRoutes"));
@@ -60,6 +56,8 @@ app.use("/api", require("./Route/examLinkRoutes"));
 app.use("/api", require("./Route/examLinkvalidationcheck"));
 app.use("/api", require("./Route/examSubmitRoutes"));
 app.use("/api", require("./Route/attendanceRoutes"));
+app.use("/api", require("./Route/liveSessionroutes"));
+app.use("/api", require("./Route/examsubmitroute"));
 
 
 app.get("/", (req, res) => {
@@ -76,28 +74,8 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("🟢 Socket connected:", socket.id);
-
-  socket.on("join_admin", ({ examCode }) => {
-    if (!examCode) return;
-    socket.join(`admin_${examCode}`);
-  });
-
-  socket.on("join_exam", ({ examCode, userId }) => {
-    if (!examCode || !userId) return;
-    socket.join(`exam_${examCode}`);
-  });
-
-  socket.on("exam_event", (data) => {
-    if (!data.examCode) return;
-    io.to(`admin_${data.examCode}`).emit("admin_event", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("🔴 Socket disconnected:", socket.id);
-  });
-});
+// ✅ LOAD SOCKET HANDLER HERE (AFTER io EXISTS)
+require("./socket/socket")(io);
 
 // -------------------- START SERVER -------------------- //
 server.listen(PORT, () => {
