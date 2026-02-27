@@ -22,6 +22,7 @@ const allowedOrigins = [
     "http://localhost:5175",
   "https://talent-frontend-design.vercel.app",
   "https://talent-admin-beta.vercel.app",
+  "https://talent-admin-p317od7vx-udichiinsurenceportalservices-projects.vercel.app"
 ];
 
 app.use(
