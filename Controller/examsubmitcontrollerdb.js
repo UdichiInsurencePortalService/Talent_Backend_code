@@ -1,5 +1,6 @@
 const pool = require("../Model/postgressdb");
 
+/* ================= SUBMIT EXAM ================= */
 const submitExam = async (req, res) => {
   try {
     const {
@@ -20,7 +21,6 @@ const submitExam = async (req, res) => {
       });
     }
 
-    // 1️⃣ Get only submitted question IDs
     const questionIds = Object.keys(answers);
 
     if (questionIds.length === 0) {
@@ -30,7 +30,6 @@ const submitExam = async (req, res) => {
       });
     }
 
-    // 2️⃣ Fetch correct answers ONLY for submitted questions
     const resultQuery = await pool.query(
       `SELECT id, correct_option
        FROM questions
@@ -54,13 +53,11 @@ const submitExam = async (req, res) => {
       }
     });
 
-    // 3️⃣ Calculate total marks properly
     const total_marks = questionIds.length * 4;
 
     const result =
       obtained_marks >= total_marks / 2 ? "PASS" : "FAIL";
 
-    // 4️⃣ Insert into DB
     await pool.query(
       `INSERT INTO exam_results
       (exam_code, candidate_name, father_name, mobile_number,
@@ -85,6 +82,11 @@ const submitExam = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Exam submitted successfully",
+      data: {
+        total_marks,
+        obtained_marks,
+        result,
+      },
     });
 
   } catch (error) {
@@ -96,4 +98,66 @@ const submitExam = async (req, res) => {
   }
 };
 
-module.exports = { submitExam };
+
+/* ================= GET ALL RESULTS ================= */
+const getAllResults = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM exam_results
+       ORDER BY submitted_at DESC`
+    );
+
+    res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+
+/* ================= GET RESULT BY MOBILE ================= */
+const getResultByMobile = async (req, res) => {
+  try {
+    const { mobile } = req.params;
+
+    const result = await pool.query(
+      `SELECT * FROM exam_results
+       WHERE mobile_number = $1
+       ORDER BY submitted_at DESC`,
+      [mobile]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No result found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: result.rows,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+module.exports = {
+  submitExam,
+  getAllResults,
+  getResultByMobile,
+};
